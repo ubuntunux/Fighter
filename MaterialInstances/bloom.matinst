@@ -1,0 +1,9 @@
+{'macros': OrderedDict(),
+ 'material_name': 'bloom',
+ 'shader_name': 'bloom',
+ 'uniform_datas': {'bloom_intensity': 0.0,
+                   'texture_bloom0': 'common.flat_white',
+                   'texture_bloom1': 'common.flat_white',
+                   'texture_bloom2': 'common.flat_white',
+                   'texture_bloom3': 'common.flat_white',
+                   'texture_bloom4': 'common.flat_gray'}}

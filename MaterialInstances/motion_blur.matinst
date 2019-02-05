@@ -1,0 +1,4 @@
+{'macros': OrderedDict(),
+ 'material_name': 'motion_blur',
+ 'shader_name': 'motion_blur',
+ 'uniform_datas': {'motion_blur_scale': 0.0, 'texture_diffuse': 'common.flat_white', 'texture_velocity': 'common.flat_white'}}

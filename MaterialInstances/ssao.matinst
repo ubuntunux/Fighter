@@ -1,0 +1,10 @@
+{'macros': OrderedDict(),
+ 'material_name': 'ssao',
+ 'shader_name': 'ssao',
+ 'uniform_datas': {'kernel': array([1., 1., 1.], dtype=float32),
+                   'radius_min_max': array([1., 1.], dtype=float32),
+                   'texture_linear_depth': 'common.flat_white',
+                   'texture_lod': 0.0,
+                   'texture_noise': 'common.flat_white',
+                   'texture_normal': 'common.flat_white',
+                   'texture_size': array([1., 1.], dtype=float32)}}

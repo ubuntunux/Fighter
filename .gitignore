@@ -15,6 +15,9 @@ logs/
 *.swp
 *.o
 *.c
+*.jpg~
+*.png~
+*.blend1
 
 # resources
 *.meta

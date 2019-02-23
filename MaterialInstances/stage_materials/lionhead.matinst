@@ -4,7 +4,7 @@
  'uniform_datas': {'SKY_RADIANCE_TO_LUMINANCE': array([1., 1., 1.], dtype=float32),
                    'SUN_RADIANCE_TO_LUMINANCE': array([1., 1., 1.], dtype=float32),
                    'brightness': 1.0,
-                   'diffuse_color': array([1., 1., 1., 1.], dtype=float32),
+                   'diffuse_color': array([0.68, 0.28, 0.1 , 1.  ], dtype=float32),
                    'earth_center': array([1., 1., 1.], dtype=float32),
                    'emissive_color': array([1., 1., 1., 0.], dtype=float32),
                    'irradiance_texture': 'common.flat_white',

@@ -15,7 +15,7 @@
        [0., 1., 0., 0.],
        [0., 0., 1., 0.],
        [0., 0., 0., 1.]]),
-                   'normal_intensity': 1.0,
+                   'normal_intensity': 0.2,
                    'reflectance': 0.0,
                    'roughness': 0.8,
                    'texture_depth': 'common.flat_white',

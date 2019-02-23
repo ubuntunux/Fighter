@@ -17,7 +17,7 @@
        [0., 0., 0., 1.]]),
                    'normal_intensity': 1.0,
                    'reflectance': 0.0,
-                   'roughness': 0.8,
+                   'roughness': 0.85,
                    'texture_depth': 'common.flat_white',
                    'texture_diffuse': 'stripe_01_albedo',
                    'texture_material': 'common.flat_white',

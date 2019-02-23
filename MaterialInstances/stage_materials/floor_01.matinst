@@ -17,7 +17,7 @@
        [0., 0., 0., 1.]]),
                    'normal_intensity': 1.0,
                    'reflectance': 0.0,
-                   'roughness': 0.8,
+                   'roughness': 1.0,
                    'texture_depth': 'common.flat_white',
                    'texture_diffuse': 'floor_01_albedo',
                    'texture_material': 'floor_01_material',

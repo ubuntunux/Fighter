@@ -1,4 +1,0 @@
-{'macros': OrderedDict([('COMBINED_SCATTERING_TEXTURES', 0)]),
- 'material_name': 'terrain.render_2317e1a2_44c3_3469_8f89_7c40408107ec',
- 'shader_name': 'terrain.render',
- 'uniform_datas': {}}

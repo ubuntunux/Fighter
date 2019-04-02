@@ -15,6 +15,8 @@ class GameClient(Singleton):
         self.jump = False
         self.vel = 0.0
 
+        self.models = {}
+
     def initialize(self, core_manager):
         logger.info("GameClient::initialize")
 
@@ -23,12 +25,20 @@ class GameClient(Singleton):
         self.resource_manager = core_manager.resource_manager
         self.scene_manager = core_manager.scene_manager
 
-        model = self.resource_manager.get_model("skeletal")
-        if model is not None:
+        player_walk = self.resource_manager.get_model("player_walk")
+        player_jump = self.resource_manager.get_model("player_jump")
+
+        if player_walk is not None:
             main_camera = self.scene_manager.main_camera
             pos = main_camera.transform.pos - main_camera.transform.front * 5.0
-            self.player = self.scene_manager.add_object(model=model, pos=pos)
-            self.player.transform.set_scale(0.01)
+            self.player = self.scene_manager.add_object(model=player_walk, pos=pos)
+            self.player.transform.set_scale(0.5)
+
+        self.models['walk'] = player_walk
+        self.models['jump'] = player_jump
+
+        # fix camera rotation
+        main_camera.transform.set_rotation((0.0, 1.57079, 0.0))
 
     def exit(self):
         logger.info("GameClient::exit")
@@ -42,28 +52,24 @@ class GameClient(Singleton):
 
         move_speed = 10.0 * delta
         rotation_speed = 0.3141592 * delta
-
-        if keydown[Keyboard.LSHIFT]:
-            move_speed *= 4.0
-
-        if btn_left or btn_right:
-            self.player.transform.rotation_yaw(-mouse_delta[0] * rotation_speed)
-            camera.transform.rotation_pitch(mouse_delta[1] * rotation_speed)
-
-        # ㅕpdate rotation matrix before translation
-        self.player.transform.update_transform()
-        camera.transform.set_yaw(self.player.transform.get_yaw() + 3.141592)
-        camera.transform.update_transform(update_inverse_matrix=True)
+        move = False
 
         if keydown[Keyboard.W] or self.game_backend.wheel_up:
-            self.player.transform.move_front(move_speed)
+            self.player.transform.set_yaw(-1.57079)
+            move = True
         elif keydown[Keyboard.S] or self.game_backend.wheel_down:
-            self.player.transform.move_front(-move_speed)
+            self.player.transform.set_yaw(1.57079)
+            move = True
 
         if keydown[Keyboard.A]:
-            self.player.transform.move_left(move_speed)
+            self.player.transform.set_yaw(0.0)
+            move = True
         elif keydown[Keyboard.D]:
-            self.player.transform.move_left(-move_speed)
+            self.player.transform.set_yaw(3.141592)
+            move = True
+
+        if move:
+            self.player.transform.move_front(move_speed)
 
         # Jump
         player_pos = self.player.transform.get_pos()
@@ -75,6 +81,9 @@ class GameClient(Singleton):
         if self.jump or 0.0 < player_pos[1]:
             self.vel -= 1.0 * delta
             self.player.transform.move_y(self.vel)
+            self.player.animation_model = self.models['jump']
+        else:
+            self.player.animation_model = self.models['walk']
 
         if player_pos[1] < 0.0:
             player_pos[1] = 0.0
@@ -82,8 +91,8 @@ class GameClient(Singleton):
             self.jump = False
 
         camera.transform.set_pos(player_pos)
-        camera.transform.move_up(1.0)
-        camera.transform.move_front(2.0)
+        camera.transform.move_up(5.0)
+        camera.transform.move_front(10.0)
 
     def update(self, delta):
         self.update_player(delta)

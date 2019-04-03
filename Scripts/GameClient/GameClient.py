@@ -15,7 +15,7 @@ class GameClient(Singleton):
         self.jump = False
         self.vel = 0.0
 
-        self.models = {}
+        self.animation_meshes = {}
 
     def initialize(self, core_manager):
         logger.info("GameClient::initialize")
@@ -25,17 +25,14 @@ class GameClient(Singleton):
         self.resource_manager = core_manager.resource_manager
         self.scene_manager = core_manager.scene_manager
 
-        player_walk = self.resource_manager.get_model("player_walk")
-        player_jump = self.resource_manager.get_model("player_jump")
+        for key in ['walk', 'jump', 'idle']:
+            self.animation_meshes[key] = self.resource_manager.get_mesh("player_" + key)
 
-        if player_walk is not None:
-            main_camera = self.scene_manager.main_camera
-            pos = main_camera.transform.pos - main_camera.transform.front * 5.0
-            self.player = self.scene_manager.add_object(model=player_walk, pos=pos)
-            self.player.transform.set_scale(0.5)
-
-        self.models['walk'] = player_walk
-        self.models['jump'] = player_jump
+        main_camera = self.scene_manager.main_camera
+        pos = main_camera.transform.pos - main_camera.transform.front * 5.0
+        player_model = self.resource_manager.get_model("player_walk")
+        self.player = self.scene_manager.add_object(model=player_model, pos=pos)
+        self.player.transform.set_scale(0.5)
 
         # fix camera rotation
         main_camera.transform.set_rotation((0.0, 1.57079, 0.0))
@@ -81,9 +78,11 @@ class GameClient(Singleton):
         if self.jump or 0.0 < player_pos[1]:
             self.vel -= 1.0 * delta
             self.player.transform.move_y(self.vel)
-            self.player.animation_model = self.models['jump']
+            self.player.set_animation(self.animation_meshes['jump'])
+        elif move:
+            self.player.set_animation(self.animation_meshes['walk'], loop=True)
         else:
-            self.player.animation_model = self.models['walk']
+            self.player.set_animation(self.animation_meshes['idle'], loop=True, speed=0.3)
 
         if player_pos[1] < 0.0:
             player_pos[1] = 0.0

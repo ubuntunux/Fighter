@@ -2,7 +2,7 @@ import numpy as np
 
 from PyEngine3D.App.GameBackend import Keyboard
 from PyEngine3D.Common import logger
-from PyEngine3D.Utilities import Singleton
+from PyEngine3D.Utilities import Singleton, StateMachine, StateItem
 
 
 class GameClient(Singleton):
@@ -13,6 +13,8 @@ class GameClient(Singleton):
         self.scene_manager = None
         self.player = None
         self.jump = False
+        self.punch = False
+        self.kick = False
         self.vel = 0.0
 
         self.animation_meshes = {}
@@ -25,12 +27,30 @@ class GameClient(Singleton):
         self.resource_manager = core_manager.resource_manager
         self.scene_manager = core_manager.scene_manager
 
-        for key in ['walk', 'jump', 'idle']:
+        animation_list = ['avoid',
+                          'elbow',
+                          'falloff',
+                          'grab_attack',
+                          'grab_attack_hit',
+                          'grab_attack_hit_loop',
+                          'grab_attack_loop',
+                          'heading',
+                          'hit',
+                          'idle',
+                          'jump',
+                          'jump_kick',
+                          'kick',
+                          'punch',
+                          'standup',
+                          'walk',
+                          'lie_down']
+
+        for key in animation_list:
             self.animation_meshes[key] = self.resource_manager.get_mesh("player_" + key)
 
         main_camera = self.scene_manager.main_camera
         pos = main_camera.transform.pos - main_camera.transform.front * 5.0
-        player_model = self.resource_manager.get_model("player_walk")
+        player_model = self.resource_manager.get_model("player")
         self.player = self.scene_manager.add_object(model=player_model, pos=pos)
         self.player.transform.set_scale(0.5)
 
@@ -68,24 +88,47 @@ class GameClient(Singleton):
         if move:
             self.player.transform.move_front(move_speed)
 
-        # Jump
-        player_pos = self.player.transform.get_pos()
-
         if not self.jump and keydown[Keyboard.SPACE]:
             self.jump = True
             self.vel = 0.5
 
-        if self.jump or 0.0 < player_pos[1]:
+        if btn_left:
+            self.punch = True
+
+        if btn_right:
+            self.kick = True
+
+        # Jump
+        player_pos = self.player.transform.get_pos()
+
+        def check_collide(point, box):
+            for i in range(3):
+                if point[i] < box.bound_min[i] or box.bound_max[i] < point[i]:
+                    return False
+            return True
+
+        collide = False
+        bound_box = self.player.bound_box
+        for collision_actor in self.scene_manager.collision_actors:
+            if check_collide([bound_box.bound_center[0], bound_box.bound_min[1], bound_box.bound_center[2]], collision_actor.bound_box):
+                collide = True
+                break
+
+        if self.jump or not collide:
             self.vel -= 1.0 * delta
             self.player.transform.move_y(self.vel)
-            self.player.set_animation(self.animation_meshes['jump'])
+            self.player.set_animation(self.animation_meshes['jump'], loop=False, speed=1.0)
         elif move:
             self.player.set_animation(self.animation_meshes['walk'], loop=True)
         else:
             self.player.set_animation(self.animation_meshes['idle'], loop=True, speed=0.3)
 
-        if player_pos[1] < 0.0:
-            player_pos[1] = 0.0
+        # if keydown[Keyboard.Q]:
+        #     self.player.transform.move_y(1.0)
+        # elif keydown[Keyboard.E]:
+        #     self.player.transform.move_y(-1.0)
+
+        if collide:
             self.vel = 0.0
             self.jump = False
 

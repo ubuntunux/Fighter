@@ -110,8 +110,11 @@ class GameClient(Singleton):
         collide = False
         bound_box = self.player.bound_box
         for collision_actor in self.scene_manager.collision_actors:
-            if check_collide([bound_box.bound_center[0], bound_box.bound_min[1], bound_box.bound_center[2]], collision_actor.bound_box):
-                collide = True
+            for geometry_bound_box in collision_actor.get_geometry_bound_boxes():
+                if check_collide([bound_box.bound_center[0], bound_box.bound_min[1], bound_box.bound_center[2]], geometry_bound_box):
+                    collide = True
+                    break
+            if collide:
                 break
 
         if self.jump or not collide:

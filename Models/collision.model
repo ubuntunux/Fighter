@@ -1,1 +1,1 @@
-{'material_instances': ['default', 'default', 'default'], 'mesh': 'collision', 'object_type': 'Model'}
+{'material_instances': ['collision', 'collision', 'collision'], 'mesh': 'collision', 'object_type': 'Model'}

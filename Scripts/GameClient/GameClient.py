@@ -1,3 +1,4 @@
+import sys
 import numpy as np
 
 from PyEngine3D.App.GameBackend import Keyboard
@@ -9,6 +10,7 @@ GRAVITY = 20.0
 JUMP_SPEED = 10.0
 MOVE_SPEED = 10.0
 BOUND_BOX_OFFSET = [0.0, 0.1, 0.0]
+EPSILON = 0.0  # sys.float_info.epsilon
 
 
 class GameClient(Singleton):
@@ -132,7 +134,7 @@ class GameClient(Singleton):
         player_pos = old_player_pos + move_vector
         self.on_ground = False
 
-        def compute_collide(i, old_position, position, move_vector, player_bound_box, bound_box):
+        def compute_collide(i, old_position, position, move_vector, bound_box):
             j = (i + 1) % 3
             k = (i + 2) % 3
 
@@ -142,20 +144,20 @@ class GameClient(Singleton):
             if move_vector[i] < 0.0 and position[i] <= bound_box.bound_max[i] <= old_position[i]:
                 ratio = abs((bound_box.bound_max[i] - old_position[i]) / move_vector[i])
                 if is_in_plane(j, ratio) and is_in_plane(k, ratio):
-                    move_vector[i] *= ratio
-                    position[i] = old_position[i] + move_vector[i]
+                    position[i] = bound_box.bound_max[i] + EPSILON
+                    move_vector[i] = position[i] - old_position[i]
                     if 1 == i:
                         self.on_ground = True
             elif 0.0 < move_vector[i] and old_position[i] <= bound_box.bound_min[i] <= position[i]:
                 ratio = abs((bound_box.bound_min[i] - old_position[i]) / move_vector[i])
                 if is_in_plane(j, ratio) and is_in_plane(k, ratio):
-                    move_vector[i] *= ratio
-                    position[i] = old_position[i] + move_vector[i]
+                    position[i] = bound_box.bound_min[i] - EPSILON
+                    move_vector[i] = position[i] - old_position[i]
 
         for collision_actor in self.scene_manager.collision_actors:
             for geometry_bound_box in collision_actor.get_geometry_bound_boxes():
                 for i in range(3):
-                    compute_collide(i, old_player_pos, player_pos, move_vector, self.player.model.mesh.bound_box, geometry_bound_box)
+                    compute_collide(i, old_player_pos, player_pos, move_vector, geometry_bound_box)
 
         if self.on_ground:
             self.velocity[1] = 0.0

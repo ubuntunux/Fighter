@@ -5,12 +5,11 @@ from PyEngine3D.App.GameBackend import Keyboard
 from PyEngine3D.Common import logger
 from PyEngine3D.Utilities import Singleton, StateMachine, StateItem, Float3
 
-
 GRAVITY = 20.0
 JUMP_SPEED = 10.0
-MOVE_SPEED = 10.0
-BOUND_BOX_OFFSET = [0.0, 0.1, 0.0]
-EPSILON = 0.0  # sys.float_info.epsilon
+MOVE_SPEED = 8.0
+BOUND_BOX_OFFSET = 0.1
+EPSILON = sys.float_info.epsilon
 
 
 class GameClient(Singleton):
@@ -33,6 +32,8 @@ class GameClient(Singleton):
         self.game_backend = core_manager.game_backend
         self.resource_manager = core_manager.resource_manager
         self.scene_manager = core_manager.scene_manager
+
+        self.resource_manager.open_scene('stage')
 
         animation_list = ['avoid',
                           'elbow',
@@ -59,7 +60,9 @@ class GameClient(Singleton):
         pos = main_camera.transform.pos - main_camera.transform.front * 5.0
         player_model = self.resource_manager.get_model("player")
         self.player = self.scene_manager.add_object(model=player_model, pos=pos)
-        self.player.transform.set_scale(0.5)
+        # self.player.transform.set_pos([0.0, -1.99, -11.0])
+        self.player.transform.set_yaw(3.141592)
+        self.player.transform.set_scale(0.45)
         self.velocity[...] = Float3(0.0, 0.0, 0.0)
 
         # fix camera rotation
@@ -129,7 +132,7 @@ class GameClient(Singleton):
 
         self.velocity[1] -= GRAVITY * delta
 
-        old_player_pos = self.player.transform.get_pos()
+        old_player_pos = self.player.transform.get_pos().copy()
         move_vector = self.velocity * delta
         player_pos = old_player_pos + move_vector
         self.on_ground = False
@@ -139,7 +142,10 @@ class GameClient(Singleton):
             k = (i + 2) % 3
 
             def is_in_plane(index, ratio):
-                return bound_box.bound_min[index] < (old_position[index] + move_vector[index] * ratio + BOUND_BOX_OFFSET[index]) < bound_box.bound_max[index]
+                if index == 1:
+                    return bound_box.bound_min[index] < (old_position[index] + move_vector[index] * ratio + BOUND_BOX_OFFSET) < bound_box.bound_max[index]
+                else:
+                    return bound_box.bound_min[index] < (old_position[index] + move_vector[index] * ratio) < bound_box.bound_max[index]
 
             if move_vector[i] < 0.0 and position[i] <= bound_box.bound_max[i] <= old_position[i]:
                 ratio = abs((bound_box.bound_max[i] - old_position[i]) / move_vector[i])
@@ -162,11 +168,11 @@ class GameClient(Singleton):
         if self.on_ground:
             self.velocity[1] = 0.0
             if move:
-                self.player.set_animation(self.animation_meshes['walk'], loop=True)
+                self.player.set_animation(self.animation_meshes['walk'], loop=True, blend_time=0.1)
             else:
-                self.player.set_animation(self.animation_meshes['idle'], loop=True, speed=0.3)
+                self.player.set_animation(self.animation_meshes['idle'], loop=True, speed=0.3, blend_time=0.1)
         else:
-            self.player.set_animation(self.animation_meshes['jump'], loop=False, speed=1.0)
+            self.player.set_animation(self.animation_meshes['jump'], loop=False, speed=1.0, blend_time=0.1)
 
         self.player.transform.set_pos(player_pos)
         camera.transform.set_pos(player_pos)

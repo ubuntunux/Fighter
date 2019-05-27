@@ -4,12 +4,30 @@ import numpy as np
 from PyEngine3D.App.GameBackend import Keyboard
 from PyEngine3D.Common import logger
 from PyEngine3D.Utilities import Singleton, StateMachine, StateItem, Float3
+from GameClient.GameState import *
+
 
 GRAVITY = 20.0
 JUMP_SPEED = 10.0
-MOVE_SPEED = 8.0
+MOVE_SPEED = 6.0
 BOUND_BOX_OFFSET = 0.1
 EPSILON = sys.float_info.epsilon
+
+KEY_FLAG_NONE = 0
+KEY_FLAG_W = 1 << 0
+KEY_FLAG_S = 1 << 1
+KEY_FLAG_A = 1 << 2
+KEY_FLAG_D = 1 << 3
+
+key_map = dict()
+key_map[KEY_FLAG_W] = -1.57079
+key_map[KEY_FLAG_S] = 1.57079
+key_map[KEY_FLAG_A] = 0.0
+key_map[KEY_FLAG_D] = 3.141592
+key_map[KEY_FLAG_W | KEY_FLAG_A] = -0.785395
+key_map[KEY_FLAG_W | KEY_FLAG_D] = 3.926987
+key_map[KEY_FLAG_S | KEY_FLAG_A] = 0.785395
+key_map[KEY_FLAG_S | KEY_FLAG_D] = 2.356191
 
 
 class GameClient(Singleton):
@@ -19,11 +37,14 @@ class GameClient(Singleton):
         self.resource_manager = None
         self.scene_manager = None
         self.player = None
+        self.enemy = None
         self.punch = False
         self.kick = False
+        self.move = False
         self.on_ground = False
         self.velocity = Float3(0.0, 0.0, 0.0)
         self.animation_meshes = {}
+        self.state_manager = GameStateManager()
 
     def initialize(self, core_manager):
         logger.info("GameClient::initialize")
@@ -60,10 +81,15 @@ class GameClient(Singleton):
         pos = main_camera.transform.pos - main_camera.transform.front * 5.0
         player_model = self.resource_manager.get_model("player")
         self.player = self.scene_manager.add_object(model=player_model, pos=pos)
+        # self.enemy = self.scene_manager.add_object(model=player_model, pos=pos)
         # self.player.transform.set_pos([0.0, -1.99, -11.0])
         self.player.transform.set_yaw(3.141592)
         self.player.transform.set_scale(0.45)
         self.velocity[...] = Float3(0.0, 0.0, 0.0)
+
+        # self.enemy.transform.set_pos([0.0, -1.99, -11.0])
+        # self.enemy.transform.set_yaw(3.141592)
+        # self.enemy.transform.set_scale(0.45)
 
         # fix camera rotation
         main_camera.transform.set_rotation((0.0, 1.57079, 0.0))
@@ -78,24 +104,9 @@ class GameClient(Singleton):
         btn_left, btn_middle, btn_right = self.game_backend.get_mouse_pressed()
         camera = self.scene_manager.main_camera
 
-        move = False
-
-        KEY_FLAG_NONE = 0
-        KEY_FLAG_W = 1 << 0
-        KEY_FLAG_S = 1 << 1
-        KEY_FLAG_A = 1 << 2
-        KEY_FLAG_D = 1 << 3
-
-        key_map = dict()
-        key_map[KEY_FLAG_W] = -1.57079
-        key_map[KEY_FLAG_S] = 1.57079
-        key_map[KEY_FLAG_A] = 0.0
-        key_map[KEY_FLAG_D] = 3.141592
-        key_map[KEY_FLAG_W | KEY_FLAG_A] = -0.785395
-        key_map[KEY_FLAG_W | KEY_FLAG_D] = 3.926987
-        key_map[KEY_FLAG_S | KEY_FLAG_A] = 0.785395
-        key_map[KEY_FLAG_S | KEY_FLAG_D] = 2.356191
-
+        self.move = False
+        self.kick = False
+        self.punch = False
         press_keys = 0
 
         if keydown[Keyboard.W]:
@@ -110,7 +121,7 @@ class GameClient(Singleton):
 
         if press_keys in key_map:
             self.player.transform.set_yaw(key_map[press_keys])
-            move = True
+            self.move = True
 
         if btn_left:
             self.punch = True
@@ -123,7 +134,7 @@ class GameClient(Singleton):
                 self.on_ground = False
                 self.velocity[1] = JUMP_SPEED
 
-            if move:
+            if self.move:
                 self.velocity[0] = self.player.transform.front[0] * MOVE_SPEED
                 self.velocity[2] = self.player.transform.front[2] * MOVE_SPEED
             else:
@@ -167,12 +178,21 @@ class GameClient(Singleton):
 
         if self.on_ground:
             self.velocity[1] = 0.0
-            if move:
-                self.player.set_animation(self.animation_meshes['walk'], loop=True, blend_time=0.1)
-            else:
-                self.player.set_animation(self.animation_meshes['idle'], loop=True, speed=0.3, blend_time=0.1)
-        else:
-            self.player.set_animation(self.animation_meshes['jump'], loop=False, speed=1.0, blend_time=0.1)
+        #     if self.move:
+        #         self.player.set_animation(self.animation_meshes['walk'], loop=True, blend_time=0.1)
+        #     elif self.punch:
+        #         self.player.set_animation(self.animation_meshes['punch'], loop=True, speed=0.5, blend_time=0.1)
+        #     elif self.kick:
+        #         self.player.set_animation(self.animation_meshes['kick'], loop=True, speed=0.5, blend_time=0.1)
+        #     else:
+        #         self.player.set_animation(self.animation_meshes['idle'], loop=True, speed=0.3, blend_time=0.1)
+        # else:
+        #     if self.kick:
+        #         self.player.set_animation(self.animation_meshes['jump_kick'], loop=False, speed=1.0, blend_time=0.1)
+        #     else:
+        #         self.player.set_animation(self.animation_meshes['jump'], loop=False, speed=1.0, blend_time=0.1)
+
+        self.state_manager.update_state(self.player, self.animation_meshes, self.on_ground, self.move)
 
         self.player.transform.set_pos(player_pos)
         camera.transform.set_pos(player_pos)

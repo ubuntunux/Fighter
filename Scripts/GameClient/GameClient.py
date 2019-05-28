@@ -38,9 +38,7 @@ class GameClient(Singleton):
         self.scene_manager = None
         self.player = None
         self.enemy = None
-        self.punch = False
-        self.kick = False
-        self.move = False
+        self.key_flag = KEY_FLAG.NONE
         self.on_ground = False
         self.velocity = Float3(0.0, 0.0, 0.0)
         self.animation_meshes = {}
@@ -104,9 +102,6 @@ class GameClient(Singleton):
         btn_left, btn_middle, btn_right = self.game_backend.get_mouse_pressed()
         camera = self.scene_manager.main_camera
 
-        self.move = False
-        self.kick = False
-        self.punch = False
         press_keys = 0
 
         if keydown[Keyboard.W]:
@@ -119,22 +114,31 @@ class GameClient(Singleton):
         elif keydown[Keyboard.D]:
             press_keys |= KEY_FLAG_D
 
+        self.key_flag = KEY_FLAG.NONE
+
         if press_keys in key_map:
-            self.player.transform.set_yaw(key_map[press_keys])
-            self.move = True
+            self.key_flag |= KEY_FLAG.MOVE
+
+        if keydown[Keyboard.SPACE]:
+            self.key_flag |= KEY_FLAG.JUMP
 
         if btn_left:
-            self.punch = True
+            self.key_flag |= KEY_FLAG.PUNCH
 
         if btn_right:
-            self.kick = True
+            self.key_flag |= KEY_FLAG.KICK
+
+        state = self.state_manager.get_state()
+
+        if (self.key_flag & KEY_FLAG.MOVE) and state.enable_rotation:
+            self.player.transform.set_yaw(key_map[press_keys])
 
         if self.on_ground:
-            if keydown[Keyboard.SPACE]:
+            if (self.key_flag & KEY_FLAG.JUMP) and state.enable_jump:
                 self.on_ground = False
                 self.velocity[1] = JUMP_SPEED
 
-            if self.move:
+            if (self.key_flag & KEY_FLAG.MOVE) and state.enable_move:
                 self.velocity[0] = self.player.transform.front[0] * MOVE_SPEED
                 self.velocity[2] = self.player.transform.front[2] * MOVE_SPEED
             else:
@@ -146,7 +150,6 @@ class GameClient(Singleton):
         old_player_pos = self.player.transform.get_pos().copy()
         move_vector = self.velocity * delta
         player_pos = old_player_pos + move_vector
-        self.on_ground = False
 
         def compute_collide(i, old_position, position, move_vector, bound_box):
             j = (i + 1) % 3
@@ -180,7 +183,7 @@ class GameClient(Singleton):
             self.velocity[1] = 0.0
         #     if self.move:
         #         self.player.set_animation(self.animation_meshes['walk'], loop=True, blend_time=0.1)
-        #     elif self.punch:
+        #     elif self.punch_key:
         #         self.player.set_animation(self.animation_meshes['punch'], loop=True, speed=0.5, blend_time=0.1)
         #     elif self.kick:
         #         self.player.set_animation(self.animation_meshes['kick'], loop=True, speed=0.5, blend_time=0.1)
@@ -192,7 +195,7 @@ class GameClient(Singleton):
         #     else:
         #         self.player.set_animation(self.animation_meshes['jump'], loop=False, speed=1.0, blend_time=0.1)
 
-        self.state_manager.update_state(self.player, self.animation_meshes, self.on_ground, self.move)
+        self.state_manager.update_state(self.player, self.animation_meshes, self.on_ground, self.key_flag)
 
         self.player.transform.set_pos(player_pos)
         camera.transform.set_pos(player_pos)

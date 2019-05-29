@@ -151,6 +151,8 @@ class GameClient(Singleton):
         move_vector = self.velocity * delta
         player_pos = old_player_pos + move_vector
 
+        self.on_ground = False
+
         def compute_collide(i, old_position, position, move_vector, bound_box):
             j = (i + 1) % 3
             k = (i + 2) % 3
@@ -181,21 +183,8 @@ class GameClient(Singleton):
 
         if self.on_ground:
             self.velocity[1] = 0.0
-        #     if self.move:
-        #         self.player.set_animation(self.animation_meshes['walk'], loop=True, blend_time=0.1)
-        #     elif self.punch_key:
-        #         self.player.set_animation(self.animation_meshes['punch'], loop=True, speed=0.5, blend_time=0.1)
-        #     elif self.kick:
-        #         self.player.set_animation(self.animation_meshes['kick'], loop=True, speed=0.5, blend_time=0.1)
-        #     else:
-        #         self.player.set_animation(self.animation_meshes['idle'], loop=True, speed=0.3, blend_time=0.1)
-        # else:
-        #     if self.kick:
-        #         self.player.set_animation(self.animation_meshes['jump_kick'], loop=False, speed=1.0, blend_time=0.1)
-        #     else:
-        #         self.player.set_animation(self.animation_meshes['jump'], loop=False, speed=1.0, blend_time=0.1)
 
-        self.state_manager.update_state(self.player, self.animation_meshes, self.on_ground, self.key_flag)
+        self.state_manager.update_state(delta, self.player, self.animation_meshes, self.on_ground, self.key_flag)
 
         self.player.transform.set_pos(player_pos)
         camera.transform.set_pos(player_pos)

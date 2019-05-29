@@ -23,12 +23,15 @@ class STATES:
 
 class StateInfo:
     def __init__(self):
+        self.delta = 0.0
+        self.elapsed_time = 0.0
         self.player = None
-        self.animation_meshes = None
-        self.on_ground = None
-        self.key_flag = None
+        self.animation_meshes = {}
+        self.on_ground = False
+        self.key_flag = KEY_FLAG.NONE
 
-    def set_info(self, player, animation_meshes, on_ground, key_flag):
+    def set_info(self, delta, player, animation_meshes, on_ground, key_flag):
+        self.delta = delta
         self.player = player
         self.animation_meshes = animation_meshes
         self.on_ground = on_ground
@@ -120,28 +123,68 @@ class StateJumpKick(StateBase):
 
 
 class StatePunch(StateBase):
+    combo_count = 3
+    combo_reset_time = 0.2
+
+    def __init__(self, *args, **kargs):
+        StateBase.__init__(self, *args, **kargs)
+        self.combo = 0
+        self.combo_end_time = 0.0
+
     def on_enter(self, state_info=None):
         if state_info is not None:
-            state_info.player.set_animation(state_info.animation_meshes['punch'], start_time=0.5, end_time=1.0, loop=False, speed=1.0, blend_time=0.1)
+            if 0.2 < (state_info.elapsed_time - self.combo_end_time):
+                self.combo = 0
+
+            if self.combo == 0:
+                state_info.player.set_animation(state_info.animation_meshes['punch'], start_time=0.0, end_time=0.5, loop=False, speed=1.0, blend_time=0.1)
+            elif self.combo == 1:
+                state_info.player.set_animation(state_info.animation_meshes['punch'], start_time=0.5, end_time=1.0, loop=False, speed=1.0, blend_time=0.1)
+            elif self.combo == 2:
+                state_info.player.set_animation(state_info.animation_meshes['punch'], start_time=1.0, loop=False, speed=1.0, blend_time=0.1)
+            self.combo = (self.combo + 1) % self.combo_count
 
     def on_update(self, state_info=None):
         if state_info.player.is_animation_end:
             self.state_manager.set_state(STATES.IDLE, state_info)
+
+    def on_exit(self, state_info=None):
+        self.combo_end_time = state_info.elapsed_time
 
 
 class StateKick(StateBase):
+    combo_count = 2
+    combo_reset_time = 0.2
+
+    def __init__(self, *args, **kargs):
+        StateBase.__init__(self, *args, **kargs)
+        self.combo = 0
+        self.combo_end_time = 0.0
+
     def on_enter(self, state_info=None):
         if state_info is not None:
-            state_info.player.set_animation(state_info.animation_meshes['kick'], loop=False, speed=1.0, blend_time=0.1)
+            if 0.2 < (state_info.elapsed_time - self.combo_end_time):
+                self.combo = 0
+
+            if self.combo == 0:
+                state_info.player.set_animation(state_info.animation_meshes['kick'], start_time=0.0, end_time=0.5, loop=False, speed=1.0, blend_time=0.1)
+            elif self.combo == 1:
+                state_info.player.set_animation(state_info.animation_meshes['kick'], start_time=0.5, loop=False, speed=1.0, blend_time=0.1)
+            self.combo = (self.combo + 1) % self.combo_count
 
     def on_update(self, state_info=None):
         if state_info.player.is_animation_end:
             self.state_manager.set_state(STATES.IDLE, state_info)
+
+    def on_exit(self, state_info=None):
+        self.combo_end_time = state_info.elapsed_time
 
 
 class GameStateManager(StateMachine):
     def __init__(self, *args, **kargs):
         StateMachine.__init__(self, *args, **kargs)
+        self.delta = 0.0
+        self.elapsed_time = 0.0
         self.state_info = StateInfo()
         self.add_state(StateNone, STATES.NONE)
         self.add_state(StateIdle, STATES.IDLE)
@@ -153,6 +196,7 @@ class GameStateManager(StateMachine):
 
         self.set_state(STATES.NONE)
 
-    def update_state(self, player, animation_meshes, on_ground, key_flag):
-        self.state_info.set_info(player, animation_meshes, on_ground, key_flag)
+    def update_state(self, delta, player, animation_meshes, on_ground, key_flag):
+        self.state_info.set_info(delta, player, animation_meshes, on_ground, key_flag)
         StateMachine.update_state(self, self.state_info)
+        self.state_info.elapsed_time += delta
